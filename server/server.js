@@ -7,10 +7,21 @@ import rateLimit from "express-rate-limit";
 import meetingRoutes from "./routes/meetingRoutes.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import redisClient from "./config/redis.js";
 dotenv.config();
 
 connectDB();
+redisClient.connect()
+  .then(() => {
+    console.log("Redis Connected");
+    
+    
 
+    
+  })
+  .catch((err) => {
+    console.log("Redis Connection Error:", err);
+  });
 const app = express();
 
 app.use(express.json());
