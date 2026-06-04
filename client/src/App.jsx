@@ -1,285 +1,355 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
-import { useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import "./App.css";
 import socket from "./socket";
-import { useRef } from "react";
-//import { useState } from "react";
-//import { useState } from "react";
-//import Peer from "simple-peer";
+
 function App() {
+  // =========================
+  // Refs
+  // =========================
+
   const videoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
   const streamRef = useRef(null);
   const peerRef = useRef(null);
-  const remoteVideoRef = useRef(null);
-  const [message, setMessage] = useState("");
-const [messages, setMessages] = useState([]);
-const sendMessage = () => {
 
+  // =========================
+  // State
+  // =========================
+
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+
+  // =========================
+  // Send Chat Message
+  // =========================
+
+  const sendMessage = () => {
     if (!message.trim()) return;
 
-    socket.emit(
-      "send-message",
-      {
-        room: "TEST123",
-        message
-      }
-    );
-socket.emit(
-  "notify",
-  {
-    room: "TEST123",
-    notification:
-      `New message from user`
-  }
-);
+    socket.emit("send-message", {
+      room: "TEST123",
+      message,
+    });
+
+    socket.emit("notify", {
+      room: "TEST123",
+      notification: "New message from user",
+    });
+
     setMessages((prev) => [
       ...prev,
       {
+        sender: "Me",
         message,
-        sender: "Me"
-      }
+      },
     ]);
 
     setMessage("");
   };
 
-  
+  // =========================
+  // Main useEffect
+  // =========================
 
- useEffect(() => {
-  navigator.mediaDevices
-  .getUserMedia({
-    video: true,
-    audio: true,
-  })
-  
-  .then((stream) => {
-    console.log("Media Access Granted");
-    streamRef.current = stream;
-     if (videoRef.current) {
-    videoRef.current.srcObject = stream;
-  }
-  peerRef.current = new RTCPeerConnection({
-  iceServers: [
-    {
-      urls: "stun:stun.l.google.com:19302",
-    },
-  ],
-});
+  useEffect(() => {
+    // =========================
+    // Media Access
+    // =========================
 
-console.log("Peer Connection Created");
-stream.getTracks().forEach((track) => {
+    navigator.mediaDevices
+      .getUserMedia({
+        video: true,
+        audio: true,
+      })
+      .then((stream) => {
+        console.log("Media Access Granted");
 
-  peerRef.current.addTrack(
-    track,
-    stream
-  );
+        streamRef.current = stream;
 
-});
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
 
-console.log("Tracks Added");
-peerRef.current.onicecandidate = (event) => {
+        // =========================
+        // Create Peer Connection
+        // =========================
 
-  if (event.candidate) {
+        peerRef.current = new RTCPeerConnection({
+          iceServers: [
+            {
+              urls: "stun:stun.l.google.com:19302",
+            },
+          ],
+        });
 
-    console.log(
-      "ICE Candidate Generated"
-    );
-     socket.emit(
-      "ice-candidate",
-      {
-        candidate: event.candidate,
-        room: "TEST123"
+        console.log("Peer Connection Created");
+
+        // =========================
+        // Add Tracks
+        // =========================
+
+        stream.getTracks().forEach((track) => {
+          peerRef.current.addTrack(track, stream);
+        });
+
+        console.log("Tracks Added");
+
+        // =========================
+        // Receive Remote Stream
+        // =========================
+
+        peerRef.current.ontrack = (event) => {
+          console.log("Remote Track Received");
+
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject =
+              event.streams[0];
+          }
+        };
+
+        // =========================
+        // ICE Candidate
+        // =========================
+
+        peerRef.current.onicecandidate = (event) => {
+          if (event.candidate) {
+            console.log(
+              "ICE Candidate Generated"
+            );
+
+            socket.emit(
+              "ice-candidate",
+              {
+                candidate: event.candidate,
+                room: "TEST123",
+              }
+            );
+          }
+        };
+
+        // =========================
+        // Create Offer
+        // =========================
+
+        peerRef.current
+          .createOffer()
+          .then((offer) => {
+            return peerRef.current.setLocalDescription(
+              offer
+            );
+          })
+          .then(() => {
+            console.log("Offer Created");
+
+            socket.emit("offer", {
+              offer:
+                peerRef.current.localDescription,
+              room: "TEST123",
+            });
+          });
+
+        console.log(stream);
+      })
+      .catch((err) => {
+        console.log("Media Error:", err);
+      });
+
+    // =========================
+    // Socket Events
+    // =========================
+
+    socket.on("connect", () => {
+      console.log(
+        "Connected:",
+        socket.id
+      );
+
+      socket.emit(
+        "join-meeting",
+        "TEST123"
+      );
+    });
+
+    socket.on("welcome", (data) => {
+      console.log(data);
+    });
+
+    socket.on(
+      "joined-successfully",
+      (data) => {
+        console.log(data);
       }
     );
 
-  }
+    socket.on("user-joined", (data) => {
+      console.log(
+        "New User:",
+        data
+      );
+    });
 
-};
-peerRef.current.createOffer()
-  .then((offer) => {
+    // =========================
+    // Chat
+    // =========================
 
-    return peerRef.current
-      .setLocalDescription(offer);
-
-  })
-  .then(() => {
-
-    console.log(
-      "Offer Created"
-    );
     socket.on(
-  "ice-candidate",
-  async (candidate) => {
-
-    console.log(
-      "ICE Candidate Received"
+      "receive-message",
+      (data) => {
+        setMessages((prev) => [
+          ...prev,
+          data,
+        ]);
+      }
     );
 
-    await peerRef.current.addIceCandidate(
-      new RTCIceCandidate(candidate)
+    // =========================
+    // Notifications
+    // =========================
+
+    socket.on(
+      "notification",
+      (data) => {
+        console.log(
+          "Notification:",
+          data
+        );
+      }
     );
 
-  }
-);
-socket.emit(
-  "offer",
-  {
-    offer: peerRef.current.localDescription,
-    room: "TEST123"
-  }
-);
-  });
-peerRef.current.ontrack = (event) => {
+    // =========================
+    // Offer
+    // =========================
 
-  console.log("Remote Track Received");
+    socket.on(
+      "offer",
+      async (offer) => {
+        console.log(
+          "Offer Received From Peer"
+        );
 
-  if (remoteVideoRef.current) {
+        await peerRef.current.setRemoteDescription(
+          new RTCSessionDescription(
+            offer
+          )
+        );
 
-    remoteVideoRef.current.srcObject =
-      event.streams[0];
+        const answer =
+          await peerRef.current.createAnswer();
 
-  }
+        await peerRef.current.setLocalDescription(
+          answer
+        );
 
-};
-    console.log(stream);
-  })
-  .catch((err) => {
-    console.log("Media Error:", err);
-  });
-socket.on(
-  "joined-successfully",
-  (data) => {
-    console.log(data);
-  }
-);
-socket.on(
-  "notification",
-  (data) => {
+        console.log(
+          "Answer Created"
+        );
 
-    console.log(
-      "Notification:",
-      data
+        socket.emit("answer", {
+          answer,
+          room: "TEST123",
+        });
+      }
     );
 
-  }
-);
-socket.on("answer", async (answer) => {
+    // =========================
+    // Answer
+    // =========================
 
-  console.log("Answer Received");
+    socket.on(
+      "answer",
+      async (answer) => {
+        console.log(
+          "Answer Received"
+        );
 
-  await peerRef.current.setRemoteDescription(
-    new RTCSessionDescription(answer)
-  );
-
-});
-socket.on("offer", async (offer) => {
-
-  console.log(
-    "Offer Received From Peer"
-  );
-
-  await peerRef.current.setRemoteDescription(
-    new RTCSessionDescription(offer)
-  );
-
-  const answer =
-    await peerRef.current.createAnswer();
-
-  await peerRef.current.setLocalDescription(
-    answer
-  );
-
-  console.log("Answer Created");
-  console.log(answer);
-  console.log("Sending Answer");
-socket.emit(
-    "answer",
-    {
-      answer,
-      room: "TEST123"
-    }
-  );
-});
-socket.on(
-  "user-joined",
-  (data) => {
-    console.log("New User:", data);
-  }
-);
-socket.on(
-  "receive-message",
-  (data) => {
-
-     setMessages((prev) => [
-    ...prev,
-    data
-  ]);
-
-  }
-);
-  socket.on("connect", () => {
-
-    console.log("Connected:", socket.id);
-
-    socket.emit(
-      "join-meeting",
-      "TEST123"
+        await peerRef.current.setRemoteDescription(
+          new RTCSessionDescription(
+            answer
+          )
+        );
+      }
     );
 
-  });
+    // =========================
+    // ICE Candidate Receive
+    // =========================
 
-  socket.on("welcome", (data) => {
-    console.log(data);
-  });
+    socket.on(
+      "ice-candidate",
+      async (candidate) => {
+        console.log(
+          "ICE Candidate Received"
+        );
 
-}, []);
+        await peerRef.current.addIceCandidate(
+          new RTCIceCandidate(
+            candidate
+          )
+        );
+      }
+    );
+
+    return () => {
+      socket.off();
+    };
+  }, []);
+
+  // =========================
+  // UI
+  // =========================
+
   return (
     <>
-  <h1>IntellMeet Frontend Working</h1>
+      <h1>IntellMeet</h1>
 
-  <video
-    ref={videoRef}
-    autoPlay
-    playsInline
-    muted
-    width="400"
-  />
-  <h2>Remote Video</h2>
+      <h2>Local Video</h2>
 
-<video
-  ref={remoteVideoRef}
-  autoPlay
-  playsInline
-  width="400"
-/>
-<h2>Chat</h2>
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        width="400"
+      />
 
-<input
-  type="text"
-  value={message}
-  onChange={(e) =>
-    setMessage(e.target.value)
-  }
-  placeholder="Type message..."
-/>
+      <h2>Remote Video</h2>
 
-<button onClick={sendMessage}>
-  Send
-</button>
+      <video
+        ref={remoteVideoRef}
+        autoPlay
+        playsInline
+        width="400"
+      />
 
-<div>
-  {messages.map((msg, index) => (
-    <p key={index}>
-      <strong>{msg.sender}: </strong>
-      {msg.message}
-    </p>
-  ))}
-</div>
-</>
-  )
+      <h2>Chat</h2>
+
+      <input
+        type="text"
+        value={message}
+        onChange={(e) =>
+          setMessage(e.target.value)
+        }
+        placeholder="Type message..."
+      />
+
+      <button onClick={sendMessage}>
+        Send
+      </button>
+
+      <div>
+        {messages.map(
+          (msg, index) => (
+            <p key={index}>
+              <strong>
+                {msg.sender}:
+              </strong>{" "}
+              {msg.message}
+            </p>
+          )
+        )}
+      </div>
+    </>
+  );
 }
 
-export default App
+export default App;
