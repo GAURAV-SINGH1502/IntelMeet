@@ -6,12 +6,48 @@ import './App.css'
 import { useEffect } from "react";
 import socket from "./socket";
 import { useRef } from "react";
+//import { useState } from "react";
+//import { useState } from "react";
 //import Peer from "simple-peer";
 function App() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const peerRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const [message, setMessage] = useState("");
+const [messages, setMessages] = useState([]);
+const sendMessage = () => {
+
+    if (!message.trim()) return;
+
+    socket.emit(
+      "send-message",
+      {
+        room: "TEST123",
+        message
+      }
+    );
+socket.emit(
+  "notify",
+  {
+    room: "TEST123",
+    notification:
+      `New message from user`
+  }
+);
+    setMessages((prev) => [
+      ...prev,
+      {
+        message,
+        sender: "Me"
+      }
+    ]);
+
+    setMessage("");
+  };
+
+  
+
  useEffect(() => {
   navigator.mediaDevices
   .getUserMedia({
@@ -119,6 +155,17 @@ socket.on(
     console.log(data);
   }
 );
+socket.on(
+  "notification",
+  (data) => {
+
+    console.log(
+      "Notification:",
+      data
+    );
+
+  }
+);
 socket.on("answer", async (answer) => {
 
   console.log("Answer Received");
@@ -162,6 +209,17 @@ socket.on(
     console.log("New User:", data);
   }
 );
+socket.on(
+  "receive-message",
+  (data) => {
+
+     setMessages((prev) => [
+    ...prev,
+    data
+  ]);
+
+  }
+);
   socket.on("connect", () => {
 
     console.log("Connected:", socket.id);
@@ -197,6 +255,29 @@ socket.on(
   playsInline
   width="400"
 />
+<h2>Chat</h2>
+
+<input
+  type="text"
+  value={message}
+  onChange={(e) =>
+    setMessage(e.target.value)
+  }
+  placeholder="Type message..."
+/>
+
+<button onClick={sendMessage}>
+  Send
+</button>
+
+<div>
+  {messages.map((msg, index) => (
+    <p key={index}>
+      <strong>{msg.sender}: </strong>
+      {msg.message}
+    </p>
+  ))}
+</div>
 </>
   )
 }

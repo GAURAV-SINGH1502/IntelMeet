@@ -96,6 +96,37 @@ io.on("connection", (socket) => {
     );
 
   }
+);socket.on(
+  "send-message",
+  ({ room, message }) => {
+
+    console.log(
+      "Message:",
+      message
+    );
+socket.on(
+  "notify",
+  ({ room, notification }) => {
+
+    socket.to(room).emit(
+      "notification",
+      {
+        notification,
+        time: new Date()
+      }
+    );
+
+  }
+);
+    socket.to(room).emit(
+      "receive-message",
+      {
+        message,
+        sender: socket.id
+      }
+    );
+
+  }
 );
    socket.on("join-meeting", (meetingCode) => {
 
