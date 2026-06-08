@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import authMiddleware from "./middleware/authMiddleware.js";
@@ -22,8 +23,9 @@ redisClient.connect()
   .catch((err) => {
     console.log("Redis Connection Error:", err);
   });
+  const roomUsers = {};
 const app = express();
-
+app.use(cors());
 app.use(express.json());
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000,
@@ -72,6 +74,20 @@ io.on("connection", (socket) => {
   );
 
 });
+socket.on(
+  "raise-hand",
+  ({ room, raised, name }) => {
+
+    socket.to(room).emit(
+      "hand-raised",
+      {
+        raised,
+        name,
+      }
+    );
+
+  }
+);
   socket.on("offer", ({ offer, room }) => {
 
   console.log("Offer Received");
@@ -86,6 +102,7 @@ io.on("connection", (socket) => {
   socket.emit("welcome", {
     message: "Socket Connected Successfully"
   });
+  
   socket.on(
   "ice-candidate",
   ({ candidate, room }) => {
@@ -104,6 +121,18 @@ io.on("connection", (socket) => {
       "Message:",
       message
     );
+
+    socket.to(room).emit(
+      "receive-message",
+      {
+        message,
+        sender: socket.id,
+      }
+    );
+
+  }
+);
+
 socket.on(
   "notify",
   ({ room, notification }) => {
@@ -112,44 +141,123 @@ socket.on(
       "notification",
       {
         notification,
-        time: new Date()
+        time: new Date(),
       }
     );
 
   }
 );
-    socket.to(room).emit(
-      "receive-message",
+   socket.on(
+  "join-meeting",
+  ({ meetingCode, name }) => {
+
+    socket.join(meetingCode);
+
+    if (!roomUsers[meetingCode]) {
+      roomUsers[meetingCode] = [];
+    }
+roomUsers[meetingCode] =
+  roomUsers[meetingCode].filter(
+    (user) =>
+      user.id !== socket.id
+  );
+    roomUsers[meetingCode].push({
+      id: socket.id,
+      name,
+    });
+
+   io.to(meetingCode).emit(
+  "participants-list",
+  roomUsers[meetingCode]
+);
+
+    socket.to(meetingCode).emit(
+      "user-joined",
       {
-        message,
-        sender: socket.id
+        userId: socket.id,
+        name,
       }
     );
 
   }
 );
-   socket.on("join-meeting", (meetingCode) => {
 
-  socket.join(meetingCode);
+socket.on(
+  "leave-meeting",
+  ({ meetingCode }) => {
+
+    console.log(
+      "Leave Meeting:",
+      meetingCode
+    );
+
+    if (
+      !meetingCode ||
+      !roomUsers[meetingCode]
+    ) {
+
+      console.log(
+        "Room not found"
+      );
+
+      return;
+
+    }
+
+    roomUsers[meetingCode] =
+      roomUsers[meetingCode].filter(
+        (user) =>
+          user.id !== socket.id
+      );
+
+    io.to(meetingCode).emit(
+      "participants-list",
+      roomUsers[meetingCode]
+    );
+
+    socket.to(meetingCode).emit(
+      "user-left",
+      {
+        userId: socket.id,
+      }
+    );
+
+    socket.leave(meetingCode);
+
+  }
+);
+   
+
+socket.on("disconnect", () => {
 
   console.log(
-    `Socket ${socket.id} joined room ${meetingCode}`
+    "User Disconnected:",
+    socket.id
   );
 
-  socket.emit(
-    "joined-successfully",
-    {
-      room: meetingCode
-    }
-  );
-socket.to(meetingCode).emit(
-    "user-joined",
-    {
-      userId: socket.id
-    }
-  );
+  Object.keys(roomUsers)
+    .forEach((room) => {
+
+      roomUsers[room] =
+        roomUsers[room].filter(
+          (user) =>
+            user.id !== socket.id
+        );
+        io.to(room).emit(
+          "participants-list",
+          roomUsers[room]
+        );
+      socket.to(room).emit(
+        "user-left",
+        {
+          userId: socket.id,
+        }
+      );
+
+    });
 
 });
+
 });
 
 const PORT = process.env.PORT;

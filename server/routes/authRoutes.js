@@ -48,7 +48,7 @@ router.post(
 
   }
 );
-router.post("/signup", async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
 
     const { name, email, password } = req.body;
@@ -126,6 +126,11 @@ const refreshToken = jwt.sign(
       message: "Login successful",
       token,
        refreshToken,
+       user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+  },
     });
 
   } catch (error) {
