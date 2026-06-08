@@ -825,16 +825,35 @@ useEffect(() => {
         videoRef.current.srcObject =
           stream;
       }
-      peerRef.current =
+      
+peerRef.current =
   new RTCPeerConnection({
     iceServers: [
       {
-        urls:
-          "stun:stun.l.google.com:19302",
+        urls: "stun:stun.relay.metered.ca:80",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80",
+        username: "efebf3bdda2486e91653fdbc",
+        credential: "F5fqb85Z2HTtHxY6",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+        username: "efebf3bdda2486e91653fdbc",
+        credential: "F5fqb85Z2HTtHxY6",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:443",
+        username: "efebf3bdda2486e91653fdbc",
+        credential: "F5fqb85Z2HTtHxY6",
+      },
+      {
+        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+        username: "efebf3bdda2486e91653fdbc",
+        credential: "F5fqb85Z2HTtHxY6",
       },
     ],
   });
-
 console.log(
   "Peer Connection Created"
 );
