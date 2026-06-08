@@ -2,6 +2,15 @@
 # IntellMeet
 
 AI-Powered Enterprise Meeting & Collaboration Platform
+## 🚀 Live Demo
+
+Frontend:
+https://intel-meet-opal.vercel.app/
+
+Backend API:
+https://intelmeet-03a1.onrender.com
+
+---
 
 ## Features
 
