@@ -1,3 +1,4 @@
+
 # IntellMeet
 
 AI-Powered Enterprise Meeting & Collaboration Platform
@@ -128,3 +129,6 @@ Real-time Chat
 Meeting History
 Profile Management
 Socket.IO Notifications
+
+# IntelMeet
+
