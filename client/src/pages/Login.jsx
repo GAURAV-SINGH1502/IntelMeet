@@ -5,7 +5,8 @@ import useMeetingStore from "../store/useMeetingStore";
 
 function Login() {
   const navigate = useNavigate();
-
+const [error, setError] =
+  useState("");
   const { setToken,
   setUser, } =
     useMeetingStore();
@@ -26,7 +27,14 @@ function Login() {
         });
 
       console.log(result);
+if (!result.token) {
 
+  setError(
+    "Invalid Email or Password"
+  );
+
+  return;
+}
       if (result.token) {
 
         setToken(result.token);
@@ -42,12 +50,17 @@ function Login() {
   };
 
   return (
+    
     <div className="min-h-screen flex items-center justify-center bg-gray-900">
       <div className="bg-white p-8 rounded-lg w-96">
         <h1 className="text-3xl font-bold mb-6 text-center">
           Login
         </h1>
-
+{error && (
+  <p className="text-red-500 mt-2">
+    {error}
+  </p>
+)}
         <input
           type="email"
           placeholder="Email"

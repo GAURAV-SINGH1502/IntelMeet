@@ -117,3 +117,14 @@ Features
 ✔ Chat
 ✔ Raise Hand
 ✔ Participant Management
+
+Features
+---------
+Authentication (JWT)
+WebRTC Video Calling
+Screen Sharing
+Meeting Recording
+Real-time Chat
+Meeting History
+Profile Management
+Socket.IO Notifications
