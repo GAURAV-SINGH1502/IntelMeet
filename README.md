@@ -109,3 +109,11 @@ Week 1 Progress
 
 ```
 ```
+Features
+---------
+✔ Video Calling
+✔ Screen Sharing
+✔ Meeting Recording
+✔ Chat
+✔ Raise Hand
+✔ Participant Management

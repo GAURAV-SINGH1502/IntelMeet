@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { registerUser } from "../services/api";
-
+import { useNavigate } from "react-router-dom";
 function Register() {
+   const navigate = useNavigate();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,6 +22,7 @@ function Register() {
         result.message ||
           "Registration Successful"
       );
+       navigate("/login");
     } catch (error) {
       console.log(error);
 
@@ -70,6 +73,17 @@ function Register() {
         >
           Register
         </button>
+        <p className="text-center mt-4">
+  Already have an account?{" "}
+  <span
+    onClick={() =>
+      navigate("/login")
+    }
+    className="text-blue-500 cursor-pointer"
+  >
+    Login
+  </span>
+</p>
       </div>
     </div>
   );

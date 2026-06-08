@@ -972,7 +972,12 @@ useEffect(() => {
   <h1 className="text-4xl font-bold">
     Meeting Room
   </h1>
-
+<p className="mt-2 text-lg">
+  Welcome,
+  <span className="font-bold ml-2 text-yellow-400">
+    {user?.name}
+  </span>
+</p>
   <p className="mt-3 text-lg">
     Meeting Code:
     <span className="font-bold ml-2 text-green-400">
@@ -1066,12 +1071,7 @@ useEffect(() => {
       <div className="grid grid-cols-4 gap-6">
 
   {/* Participants */}
-  <div className="col-span-1">
-    <div className="bg-gray-800 p-4 rounded-xl">
-      <h2 className="text-2xl font-bold mb-4">
-        Participants
-      </h2>
-      </div></div>
+  
 
     {participants.map((participant) => (
   <div
@@ -1115,11 +1115,17 @@ useEffect(() => {
   ) : (
     notifications.map((item, index) => (
       <div
-        key={index}
-        className="mb-2"
-      >
-        🔔 {item.notification}
-      </div>
+  key={index}
+  className="bg-gray-700 p-2 rounded mb-2"
+>
+  <p>{item.notification}</p>
+
+  <p className="text-xs text-gray-400">
+    {new Date(
+      item.time
+    ).toLocaleTimeString()}
+  </p>
+</div>
     ))
   )}
 </div>

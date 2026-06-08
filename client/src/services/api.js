@@ -1,3 +1,4 @@
+//import axios from "axios";
 const API_URL = "http://localhost:5000/api";
 
 export const registerUser = async (userData) => {
@@ -63,4 +64,24 @@ export const createMeeting = async (title) => {
   );
 
   return response.json();
+};
+export const deleteMeeting = async (
+  id,
+  token
+) => {
+
+  const response =
+    await fetch(
+      `${API_URL}/meetings/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+        },
+      }
+    );
+
+  return response.json();
+
 };

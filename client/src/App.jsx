@@ -377,7 +377,8 @@ import Meeting from "./pages/Meeting";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import History from "./pages/History";
+import Profile from "./pages/Profile";
 function App() {
   return (
     <Routes>
@@ -408,6 +409,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+  path="/history"
+  element={<History />}
+/>
+<Route
+  path="/profile"
+  element={<Profile />}
+/>
     </Routes>
   );
 }
