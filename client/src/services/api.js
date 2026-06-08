@@ -1,6 +1,7 @@
 //import axios from "axios";
-const API_URL = "http://localhost:5000/api";
-
+//const API_URL = "http://localhost:5000/api";
+const API_URL =
+  "https://intelmeet-03a1.onrender.com/api";
 export const registerUser = async (userData) => {
   const response = await fetch(
     `${API_URL}/auth/register`,
@@ -35,7 +36,7 @@ export const getMeetings = async () => {
   const token = localStorage.getItem("token");
 
   const response = await fetch(
-    "http://localhost:5000/api/meetings/all",
+    "https://intelmeet-03a1.onrender.com/api/meetings/all",
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -50,7 +51,7 @@ export const createMeeting = async (title) => {
   const token = localStorage.getItem("token");
 
   const response = await fetch(
-    "http://localhost:5000/api/meetings/create",
+    "https://intelmeet-03a1.onrender.com/api/meetings/create",
     {
       method: "POST",
       headers: {
