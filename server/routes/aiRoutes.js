@@ -1,66 +1,40 @@
 import express from "express";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const router = express.Router();
+console.log(
+  process.env.GEMINI_API_KEY
+);
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY
+);
 
 router.post(
   "/summary",
   async (req, res) => {
-
     try {
 
       const { messages } = req.body;
 
-      const prompt = `
-Summarize this meeting in concise bullet points:
+      const model =
+        genAI.getGenerativeModel({
+          model: "gemini-2.0-flash",
+        });
 
+      const prompt = `
+Summarize the following meeting discussion in concise bullet points.
+
+Messages:
 ${messages.join("\n")}
 `;
 
-      const response =
-        await fetch(
-          "https://openrouter.ai/api/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              Authorization:
-                `Bearer ${process.env.OPENROUTER_API_KEY}`,
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              model: "openai/gpt-4o-mini",
-
-              messages: [
-                {
-                  role: "user",
-                  content: prompt,
-                },
-              ],
-            }),
-          }
+      const result =
+        await model.generateContent(
+          prompt
         );
 
-      const data =
-        await response.json();
-
-      if (!data.choices) {
-
-  console.log(
-    "OpenRouter Error:",
-    data
-  );
-
-  return res.status(500).json({
-    message:
-      data.error?.message ||
-      "AI response failed",
-  });
-console.log(data);
-}
-
-const summary =
-  data.choices[0]
-    .message.content;
+      const summary =
+        result.response.text();
 
       res.json({
         summary,
@@ -76,7 +50,6 @@ const summary =
       });
 
     }
-
   }
 );
 
