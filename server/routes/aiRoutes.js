@@ -2,7 +2,9 @@ import express from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const router = express.Router();
-
+console.log(
+  process.env.GEMINI_API_KEY
+);
 const genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY
 );
@@ -44,7 +46,7 @@ ${messages.join("\n")}
 
       res.status(500).json({
         message:
-          "Failed to generate summary",
+          error.message,
       });
 
     }
