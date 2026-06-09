@@ -28,8 +28,7 @@ ${messages.join("\n")}
                 "application/json",
             },
             body: JSON.stringify({
-              model:
-                "mistralai/mistral-7b-instruct",
+              model: "openai/gpt-4o-mini",
 
               messages: [
                 {
