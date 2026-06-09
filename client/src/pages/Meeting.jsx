@@ -45,7 +45,7 @@
 // export default Meeting;
 import { useEffect, useState, useRef } from "react";
 import { useParams , useNavigate} from "react-router-dom";
-
+import { generateSummary } from "../services/api";
 import socket from "../socket";
 
 import VideoRoom from "../components/VideoRoom";
@@ -79,6 +79,8 @@ const { user } = useMeetingStore();
   const [handRaised, setHandRaised] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [summary, setSummary] = useState("");
+const [loadingSummary,setLoadingSummary] = useState(false);
   // =========================
   // Send Message
   // =========================
@@ -327,7 +329,43 @@ const stopSharing = async () => {
   );
 
 };
+const handleGenerateSummary =
+  async () => {
 
+    try {
+
+      setLoadingSummary(true);
+
+      const chatTexts =
+        messages.map(
+          (msg) =>
+            `${msg.sender}: ${msg.message}`
+        );
+
+      const result =
+        await generateSummary(
+          chatTexts
+        );
+
+      setSummary(
+        result.summary
+      );
+
+    } catch (error) {
+
+      console.log(error);
+
+      alert(
+        "Failed to generate summary"
+      );
+
+    } finally {
+
+      setLoadingSummary(false);
+
+    }
+
+  };
 // Start Recording
 const startRecording = async () => {
 
@@ -1156,6 +1194,43 @@ useEffect(() => {
     messages={messages}
   />
 </div>
+<button
+  onClick={
+    handleGenerateSummary
+  }
+  className="bg-purple-600 px-4 py-2 rounded mt-3"
+>
+  🤖 Generate AI Summary
+</button>
+{loadingSummary && (
+  <p className="mt-3">
+    Generating Summary...
+  </p>
+)}
+
+{summary && (
+  <div
+    className="
+      mt-4
+      bg-gray-800
+      p-4
+      rounded
+    "
+  >
+    <h3
+      className="
+        font-bold
+        text-lg
+      "
+    >
+      AI Meeting Summary
+    </h3>
+
+    <p className="mt-2">
+      {summary}
+    </p>
+  </div>
+)}
     </div>
   );
 }

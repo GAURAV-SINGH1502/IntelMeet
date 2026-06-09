@@ -9,6 +9,7 @@ import meetingRoutes from "./routes/meetingRoutes.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import redisClient from "./config/redis.js";
+import aiRoutes from "./routes/aiRoutes.js";
 dotenv.config();
 
 connectDB();
@@ -25,6 +26,7 @@ redisClient.connect()
   });
   const roomUsers = {};
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 const limiter = rateLimit({
@@ -36,7 +38,7 @@ const limiter = rateLimit({
 });
 app.use("/api/auth", limiter);
 app.use("/api/auth", authRoutes);
-
+app.use("/api/ai", aiRoutes);
 app.get("/", (req, res) => {
   res.send("Backend Working");
 });

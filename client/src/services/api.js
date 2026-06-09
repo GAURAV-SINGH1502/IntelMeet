@@ -31,7 +31,26 @@ export const loginUser = async (userData) => {
 
   return response.json();
 };
+export const generateSummary =
+  async (messages) => {
 
+    const response =
+      await fetch(
+        `${API_URL}/ai/summary`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            messages,
+          }),
+        }
+      );
+
+    return response.json();
+  };
 export const getMeetings = async () => {
   const token = localStorage.getItem("token");
 
