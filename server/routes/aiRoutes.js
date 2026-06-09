@@ -44,9 +44,24 @@ ${messages.join("\n")}
       const data =
         await response.json();
 
-      const summary =
-        data.choices[0]
-          .message.content;
+      if (!data.choices) {
+
+  console.log(
+    "OpenRouter Error:",
+    data
+  );
+
+  return res.status(500).json({
+    message:
+      data.error?.message ||
+      "AI response failed",
+  });
+console.log(data);
+}
+
+const summary =
+  data.choices[0]
+    .message.content;
 
       res.json({
         summary,
