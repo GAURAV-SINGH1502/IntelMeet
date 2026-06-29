@@ -28,7 +28,15 @@ export const loginUser = async (userData) => {
       body: JSON.stringify(userData),
     }
   );
+console.log("Status:", response.status);
 
+  const text = await response.text();
+
+  console.log("Response:", text);
+
+  if (!response.ok) {
+    throw new Error(text);
+  }
   return response.json();
 };
 export const generateSummary =

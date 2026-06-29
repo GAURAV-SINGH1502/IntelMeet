@@ -45,6 +45,7 @@ if (!result.token) {
 
     } catch (error) {
 console.error("Step 4", error);
+ console.error("Login Error:", error);
       console.log(error);
 
     }
