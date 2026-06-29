@@ -84,7 +84,9 @@ router.post("/register", async (req, res) => {
 import jwt from "jsonwebtoken";
 
 router.post("/login", async (req, res) => {
+console.log("====== LOGIN API HIT ======");
 
+    console.log(req.body);
   try {
 
     const { email, password } = req.body;
@@ -134,7 +136,7 @@ const refreshToken = jwt.sign(
     });
 
   } catch (error) {
-    console.log(error);
+    console.log(err);
   }
 
 });
