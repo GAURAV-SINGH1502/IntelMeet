@@ -37,7 +37,7 @@ console.log("Status:", response.status);
   if (!response.ok) {
     throw new Error(text);
   }
-  return await response.json();
+  return JSON.parse(text);
 };
 export const generateSummary =
   async (messages) => {
