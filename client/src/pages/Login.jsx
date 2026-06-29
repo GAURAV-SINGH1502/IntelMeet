@@ -18,14 +18,15 @@ const [error, setError] =
     useState("");
 
   const handleLogin = async () => {
+    console.log("Step 1");
     try {
-
+console.log("Step 2");
       const result =
         await loginUser({
           email,
           password,
         });
-
+ console.log("Step 3", result);
       console.log(result);
 if (!result.token) {
 
@@ -43,7 +44,7 @@ if (!result.token) {
       }
 
     } catch (error) {
-
+console.error("Step 4", error);
       console.log(error);
 
     }

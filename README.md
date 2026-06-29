@@ -141,3 +141,26 @@ Socket.IO Notifications
 
 # IntelMeet
 
+GitHub:
+https://github.com/GAURAV-SINGH1502/IntelMeet
+
+Frontend:
+https://intel-meet-opal.vercel.app
+
+Backend:
+https://intelmeet-03a1.onrender.com
+
+MongoDB Atlas:
+https://cloud.mongodb.com
+
+Render:
+https://dashboard.render.com  // Backend
+
+Vercel:
+https://vercel.com/dashboard  // Frontend
+
+Redis:
+https://redis.io
+
+Metered:
+https://www.metered.ca
