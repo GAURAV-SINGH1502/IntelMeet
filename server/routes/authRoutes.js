@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import upload from "../middleware/uploadMiddleware.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import mongoose from "mongoose";
 const router = express.Router();
 // router.post(
 //   "/upload-avatar",
@@ -90,10 +91,10 @@ console.log("====== LOGIN API HIT ======");
   try {
 
     const { email, password } = req.body;
-
+console.log("Mongo Ready State:", mongoose.connection.readyState);
     // find user
     const user = await User.findOne({ email });
-
+console.log("User found:", user);
     if (!user) {
       return res.status(400).json({
         message: "Invalid email",

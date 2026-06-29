@@ -12,8 +12,8 @@ import redisClient from "./config/redis.js";
 import aiRoutes from "./routes/aiRoutes.js";
 dotenv.config();
 
-connectDB();
-redisClient.connect()
+await connectDB();
+await redisClient.connect()
   .then(() => {
     console.log("Redis Connected");
     
