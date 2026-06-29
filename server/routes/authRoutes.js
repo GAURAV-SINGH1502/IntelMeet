@@ -136,7 +136,12 @@ const refreshToken = jwt.sign(
     });
 
   } catch (error) {
-    console.log(err);
+    console.error("Login Error:", error);
+
+    return res.status(500).json({
+        message: error.message,
+    });
+
   }
 
 });
