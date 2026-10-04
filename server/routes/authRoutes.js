@@ -1,185 +1,176 @@
 import express from "express";
-import User from "../models/User.js";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import User from "../models/User.js";
 import upload from "../middleware/uploadMiddleware.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import mongoose from "mongoose";
+
 const router = express.Router();
-// router.post(
-//   "/upload-avatar",
-//   upload.single("avatar"),
 
-//   async (req, res) => {
+const JWT_SECRET = process.env.JWT_SECRET || "intelmeet_jwt_secret_key";
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "intelmeet_jwt_refresh_secret_key";
 
-//     try {
-
-//       res.json({
-//         message: "Image uploaded",
-//         imageUrl: req.file.path,
-//       });
-
-//     } catch (error) {
-//       console.log(error);
-//     }
-
-//   }
-// );
 router.post(
   "/upload-avatar",
-   authMiddleware,
+  authMiddleware,
   upload.single("avatar"),
   async (req, res) => {
-
     try {
+      if (!req.file || !req.file.path) {
+        return res.status(400).json({
+          message: "No image uploaded",
+        });
+      }
 
       return res.json({
         message: "Image uploaded",
         imageUrl: req.file.path,
       });
-
     } catch (error) {
-
-      console.error(error);
-
+      console.error("Upload avatar error:", error);
       return res.status(500).json({
-        message: error.message
+        message: error.message || "Failed to upload avatar",
       });
-
     }
-
   }
 );
+
 router.post("/register", async (req, res) => {
   try {
-
     const { name, email, password } = req.body;
 
-    // check existing user
-    const existingUser = await User.findOne({ email });
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Please provide all required fields: name, email, and password",
+      });
+    }
+
+    const trimmedEmail = email.toLowerCase().trim();
+
+    // Check existing user
+    const existingUser = await User.findOne({ email: trimmedEmail });
 
     if (existingUser) {
       return res.status(400).json({
-        message: "User already exists",
+        message: "User with this email already exists",
       });
     }
 
-    // hash password
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // create user
+    // Create user
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: trimmedEmail,
       password: hashedPassword,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Signup successful",
-      user,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
-
   } catch (error) {
-    console.log(error);
+    console.error("Register Error:", error);
+    return res.status(500).json({
+      message: error.message || "Registration failed",
+    });
   }
 });
-import jwt from "jsonwebtoken";
 
 router.post("/login", async (req, res) => {
-console.log("====== LOGIN API HIT ======");
-
-    console.log(req.body);
   try {
-
     const { email, password } = req.body;
-console.log("Mongo Ready State:", mongoose.connection.readyState);
-    // find user
-    const user = await User.findOne({ email });
-console.log("User found:", user);
-    if (!user) {
+
+    if (!email || !password) {
       return res.status(400).json({
-        message: "Invalid email",
+        message: "Please provide both email and password",
       });
     }
 
-    // compare password
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const trimmedEmail = email.toLowerCase().trim();
+
+    // Find user
+    const user = await User.findOne({ email: trimmedEmail });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(400).json({
-        message: "Invalid password",
+        message: "Invalid email or password",
       });
     }
 
-    // create token
+    // Create access token
     const token = jwt.sign(
-  { id: user._id },
-  process.env.JWT_SECRET,
-  { expiresIn: "1d" }
-);
-// refresh token
-const refreshToken = jwt.sign(
-  { id: user._id },
-  process.env.JWT_REFRESH_SECRET,
-  { expiresIn: "7d" }
-);
-    res.json({
+      { id: user._id, email: user.email, name: user.name },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Create refresh token
+    const refreshToken = jwt.sign(
+      { id: user._id },
+      JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
       message: "Login successful",
       token,
-       refreshToken,
-       user: {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-  },
+      refreshToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
-
   } catch (error) {
     console.error("Login Error:", error);
-
     return res.status(500).json({
-        message: error.message,
+      message: error.message || "Login failed",
     });
-
   }
-
 });
-router.post("/refresh-token", (req, res) => {
 
+router.post("/refresh-token", (req, res) => {
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
     return res.status(401).json({
-      message: "Refresh token required"
+      message: "Refresh token required",
     });
   }
 
   try {
-
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET
-    );
+    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
 
     const token = jwt.sign(
       { id: decoded.id },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    res.json({
-      token
+    return res.json({
+      token,
     });
-
   } catch (error) {
-
-    res.status(403).json({
-      message: "Invalid refresh token"
+    return res.status(403).json({
+      message: "Invalid refresh token",
     });
-
   }
-
 });
+
 export default router;

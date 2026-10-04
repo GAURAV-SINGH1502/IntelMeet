@@ -1,7 +1,7 @@
 import express from "express";
 import Meeting from "../models/Meeting.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import redisClient from "../config/redis.js";
+import { getCache, setCache, delCache } from "../config/redis.js";
 
 const router = express.Router();
 
@@ -11,80 +11,75 @@ router.post(
   authMiddleware,
   async (req, res) => {
     try {
-
       const { title } = req.body;
 
+      if (!title || !title.trim()) {
+        return res.status(400).json({
+          message: "Meeting title is required",
+        });
+      }
+
+      const meetingCode = Math.random()
+        .toString(36)
+        .substring(2, 8);
+
       const meeting = await Meeting.create({
-        title,
-        host: req.user.id,
-        meetingCode: Math.random()
-          .toString(36)
-          .substring(2, 8),
+        title: title.trim(),
+        host: req.user?.id,
+        meetingCode,
       });
 
-      // Clear cache after creating meeting
-      await redisClient.del("meetings");
+      // Safely clear cache after creating meeting
+      await delCache("meetings");
 
-      res.status(201).json({
+      return res.status(201).json({
         message: "Meeting created",
         meeting,
       });
-
     } catch (error) {
+      console.error("Create Meeting Error:", error);
 
-      console.log(error);
-
-      res.status(500).json({
-        message: error.message,
+      return res.status(500).json({
+        message: error.message || "Failed to create meeting",
       });
-
     }
   }
 );
 
-// Get All Meetings (Redis Cache)
+// Get All Meetings (with Redis Cache fallback)
 router.get(
   "/all",
   authMiddleware,
   async (req, res) => {
     try {
-
-      const cachedMeetings =
-        await redisClient.get("meetings");
+      const cachedMeetings = await getCache("meetings");
 
       if (cachedMeetings) {
-
-        console.log(
-          "Meetings from Redis Cache"
-        );
-
-        return res.json(
-          JSON.parse(cachedMeetings)
-        );
+        try {
+          const parsed = JSON.parse(cachedMeetings);
+          console.log("Serving meetings from Redis Cache");
+          return res.json(parsed);
+        } catch (e) {
+          console.warn("Error parsing cached meetings JSON, falling back to DB");
+        }
       }
 
-      const meetings =
-        await Meeting.find();
+      const meetings = await Meeting.find().sort({ createdAt: -1 });
 
-      await redisClient.set(
+      await setCache(
         "meetings",
-        JSON.stringify(meetings)
+        JSON.stringify(meetings),
+        120
       );
 
-      console.log(
-        "Meetings from MongoDB"
-      );
-
-      res.json(meetings);
-
+      console.log("Serving meetings from MongoDB");
+      return res.json(meetings);
     } catch (error) {
+      console.error("Get Meetings Error:", error);
 
-      console.log(error);
-
-      res.status(500).json({
-        message: error.message,
+      return res.status(500).json({
+        message: error.message || "Failed to fetch meetings",
       });
-
     }
   }
 );
@@ -95,34 +90,37 @@ router.put(
   authMiddleware,
   async (req, res) => {
     try {
+      const { title } = req.body;
 
-      const meeting =
-        await Meeting.findByIdAndUpdate(
-          req.params.id,
-          {
-            title: req.body.title,
-          },
-          {
-            new: true,
-          }
-        );
+      const meeting = await Meeting.findByIdAndUpdate(
+        req.params.id,
+        {
+          title,
+        },
+        {
+          new: true,
+        }
+      );
+
+      if (!meeting) {
+        return res.status(404).json({
+          message: "Meeting not found",
+        });
+      }
 
       // Clear cache after update
-      await redisClient.del("meetings");
+      await delCache("meetings");
 
-      res.json({
+      return res.json({
         message: "Meeting updated",
         meeting,
       });
-
     } catch (error) {
+      console.error("Update Meeting Error:", error);
 
-      console.log(error);
-
-      res.status(500).json({
-        message: error.message,
+      return res.status(500).json({
+        message: error.message || "Failed to update meeting",
       });
-
     }
   }
 );
@@ -133,26 +131,26 @@ router.delete(
   authMiddleware,
   async (req, res) => {
     try {
+      const meeting = await Meeting.findByIdAndDelete(req.params.id);
 
-      await Meeting.findByIdAndDelete(
-        req.params.id
-      );
+      if (!meeting) {
+        return res.status(404).json({
+          message: "Meeting not found",
+        });
+      }
 
       // Clear cache after delete
-      await redisClient.del("meetings");
+      await delCache("meetings");
 
-      res.json({
+      return res.json({
         message: "Meeting deleted",
       });
-
     } catch (error) {
+      console.error("Delete Meeting Error:", error);
 
-      console.log(error);
-
-      res.status(500).json({
-        message: error.message,
+      return res.status(500).json({
+        message: error.message || "Failed to delete meeting",
       });
-
     }
   }
 );
