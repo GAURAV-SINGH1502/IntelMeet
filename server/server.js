@@ -61,7 +61,8 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "https://intel-meet-opal.vercel.app",
+    methods: ["GET", "POST"],
   },
 });
 
